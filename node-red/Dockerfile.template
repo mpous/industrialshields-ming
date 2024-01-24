@@ -21,6 +21,10 @@ RUN make
 RUN curl https://apps.industrialshields.com/main/rpi/rpiplc_v4/hw-config.service -o hw-config.service
 RUN curl https://apps.industrialshields.com/main/rpi/rpiplc_v4/hw-config -o hw-config
 
+# rpiplc RPISHUTDOWN
+RUN curl -L https://apps.industrialshields.com/main/rpi/ups/rpishutdown.service -o rpishutdown.service
+RUN curl -L https://apps.industrialshields.com/main/rpi/ups/rpishutdown -o rpishutdown
+
 
 WORKDIR /usr/src/app
 
@@ -60,6 +64,7 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
   git \
   systemd-sysv \
   openssh-client \
+  minicom \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install both DBus and systemd support to run systemctl hw-config
@@ -79,13 +84,19 @@ COPY --from=build /usr/src/app/rpiplc-lib/librpiplc.so /usr/local/lib/
 COPY --from=build /usr/src/app/rpiplc-lib/src/*.h /usr/local/include/rpiplc/
 RUN ldconfig
 
-
 # rpiplc hw-config
 COPY --from=build /usr/src/app/rpiplc-lib/hw-config.service /lib/systemd/system/hw-config.service
 COPY --from=build /usr/src/app/rpiplc-lib/hw-config /usr/local/bin/hw-config
 RUN chmod ugo+x /usr/local/bin/hw-config
+
 #RUN systemctl start hw-config
 RUN systemctl enable hw-config
+
+# rpiplc RPISHUTDOWN
+COPY --from=build /usr/src/app/rpiplc-lib/rpishutdown.service /lib/systemd/system/rpishutdown.service
+COPY --from=build /usr/src/app/rpiplc-lib/rpishutdown /usr/local/bin/rpishutdown
+RUN chmod ugo+x /usr/local/bin/rpishutdown
+
 
 COPY ./ssh_config /etc/ssh/ssh_config
 
